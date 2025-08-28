@@ -251,3 +251,40 @@ with tab2:
         ).properties(title="Books Distribution by Genre")
         st.altair_chart(genre_chart, use_container_width=True)
 
+
+# ---------------- Tab 3: Data Analytics ----------------
+with tab3:
+    st.header("📊 Library Data Analytics")
+    st.write("Insights from library catalog and chatbot interactions")
+
+    # Top Genres & Authors
+    st.subheader("Top Genres")
+    st.bar_chart(books_df["GENRE"].value_counts().head(10))
+    st.subheader("Top Authors")
+    st.bar_chart(books_df["AUTHOR"].value_counts().head(10))
+
+    # Publication Trends
+    st.subheader("Books Published Over the Years by Genre")
+    trend_chart = alt.Chart(books_df).mark_bar().encode(
+        x="DATE PUBLISH:O",
+        y="count()",
+        color="GENRE:N",
+        tooltip=["GENRE", "DATE PUBLISH", "count()"]
+    ).properties(title="Books Published per Year by Genre")
+    st.altair_chart(trend_chart, use_container_width=True)
+
+    # Chat Sentiment Trend
+    st.subheader("Chat Sentiment Trend")
+    if "messages" in st.session_state:
+        user_queries = [m["content"] for m in st.session_state["messages"] if m["role"]=="user"]
+        if user_queries:
+            sentiment_scores = [TextBlob(q).sentiment.polarity for q in user_queries]
+            st.line_chart(sentiment_scores)
+
+    # Missed Searches
+    st.subheader("Missed Search Queries")
+    if "messages" in st.session_state:
+        missed = sum(1 for q in user_queries if keyword_search(q).empty)
+        total = len(user_queries)
+        if total > 0:
+            st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
