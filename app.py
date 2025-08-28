@@ -233,24 +233,6 @@ with tab2:
     else:
         st.info("No books found. Try adjusting your search or filters.")
 
-    # Graphs
-    st.markdown("---")
-    st.subheader("📊 Library Insights")
-    if not books_df.empty:
-        year_chart = alt.Chart(books_df).mark_bar().encode(
-            x=alt.X("DATE PUBLISH:O", title="Year Published"),
-            y=alt.Y("count()", title="Number of Books"),
-            tooltip=["DATE PUBLISH", "count()"]
-        ).properties(title="Books Published by Year")
-        st.altair_chart(year_chart, use_container_width=True)
-
-        genre_chart = alt.Chart(books_df).mark_bar().encode(
-            x=alt.X("GENRE:N", sort="-y", title="Genre"),
-            y=alt.Y("count()", title="Number of Books"),
-            tooltip=["GENRE", "count()"]
-        ).properties(title="Books Distribution by Genre")
-        st.altair_chart(genre_chart, use_container_width=True)
-
 
 # ---------------- Tab 3: Data Analytics ----------------
 with tab3:
@@ -288,4 +270,5 @@ with tab3:
         total = len(user_queries)
         if total > 0:
             st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
+
 
