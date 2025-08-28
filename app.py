@@ -7,38 +7,6 @@ import os
 import altair as alt
 import openai
 
-load_dotenv()
-client = openai.OpenAI()
-@st.cache_data
-def get_response(user_prompt, temperature):
-    response = client.responses.create(
-            model="gpt-4o",  # Use the latest chat model
-            input=[
-                {"role": "user", "content": user_prompt}  # Prompt
-            ],
-            temperature=temperature,  # A bit of creativity
-            max_output_tokens=100  # Limit response length
-        )
-    return response
-
-# Add a text input box for the user prompt
-user_prompt = st.text_input("Enter your prompt:", "Explain generative AI in one sentence.")
-
-# Add a slider for temperature
-temperature = st.slider(
-    "Model temperature:",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.7,
-    step=0.01,
-    help="Controls randomness: 0 = deterministic, 1 = very creative"
-    )
-
-with st.spinner("AI is working..."):
-    response = get_response(user_prompt, temperature)
-    # print the response from OpenAI
-    st.write(response.output[0].content[0].text)
-
 def get_dataset_path():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(current_dir, "data", "customer_reviews.csv")
@@ -96,4 +64,5 @@ if "df" in st.session_state:
         height=400,
         title="Distribution of Sentiment Scores"
     )
+
     st.altair_chart(chart, use_container_width=True)
