@@ -137,7 +137,7 @@ def get_response(user_prompt, temperature=0.5):
 st.title("📚 LibChat System")
 st.write("Your AI-Powered Librarian and Library Catalog! 🔎")
 
-tab1, tab2 = st.tabs(["💬 Chatbot", "📖 Library Catalog"])
+tab1, tab2, tab3 = st.tabs(["💬 Chatbot", "📖 Library Catalog", "📊 Data Analytics"])
 
 # ---------------- Tab 1: Chatbot ----------------
 with tab1:
@@ -288,3 +288,4 @@ with tab3:
         total = len(user_queries)
         if total > 0:
             st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
+
