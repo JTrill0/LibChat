@@ -7,6 +7,48 @@ import os
 import altair as alt
 import openai
 
+# --- Load environment variables ---
+load_dotenv()
+
+# Get your OpenAI API key from .env
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Initialize OpenAI client
+client = openai.OpenAI(api_key=openai.api_key)
+
+# --- OpenAI Response Function ---
+@st.cache_data
+def get_response(user_prompt, temperature):
+    response = client.responses.create(
+        model="gpt-4o",  # Use the latest chat model
+        input=[{"role": "user", "content": user_prompt}],
+        temperature=temperature,
+        max_output_tokens=100
+    )
+    return response
+
+# --- Streamlit UI ---
+st.title("AI + Data Explorer")
+
+# Add a text input box for the user prompt
+user_prompt = st.text_input("Enter your prompt:", "Explain generative AI in one sentence.")
+
+# Add a slider for temperature
+temperature = st.slider(
+    "Model temperature:",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.7,
+    step=0.01,
+    help="Controls randomness: 0 = deterministic, 1 = very creative"
+)
+
+with st.spinner("AI is working..."):
+    if user_prompt:
+        response = get_response(user_prompt, temperature)
+        st.write(response.output[0].content[0].text)
+
+# --- Dataset Helper ---
 def get_dataset_path():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(current_dir, "data", "customer_reviews.csv")
@@ -17,7 +59,7 @@ def clean_text(text):
     text = re.sub(r'[^\w\s]', '', text)
     return text
 
-# Layout two buttons side by side
+# --- Buttons Layout ---
 col1, col2 = st.columns(2)
 
 with col1:
@@ -37,9 +79,8 @@ with col2:
         else:
             st.warning("Please ingest the dataset first.")
 
-# Display the dataset if it exists
+# --- Display Dataset ---
 if "df" in st.session_state:
-    # Product filter dropdown
     st.subheader("🔎 Filter by Product")
     product = st.selectbox("Choose a product", ["All Products"] + list(st.session_state["df"]["PRODUCT"].unique()))
     st.subheader(f"📁 Reviews for {product}")
@@ -48,10 +89,11 @@ if "df" in st.session_state:
         filtered_df = st.session_state["df"][st.session_state["df"]["PRODUCT"] == product]
     else:
         filtered_df = st.session_state["df"]
+
     st.dataframe(filtered_df)
     
+    # --- Sentiment Distribution Chart ---
     st.subheader(f"Sentiment Score Distribution for {product}")
-    # Create Altair histogram using add_params instead of add_selection
     interval = alt.selection_interval()
     chart = alt.Chart(filtered_df).mark_bar().add_params(
         interval
@@ -64,5 +106,4 @@ if "df" in st.session_state:
         height=400,
         title="Distribution of Sentiment Scores"
     )
-
     st.altair_chart(chart, use_container_width=True)
