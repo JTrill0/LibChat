@@ -6,11 +6,10 @@ import os
 import altair as alt
 import openai
 
-# Access OpenAI API key from Streamlit secrets
+# ✅ Load OpenAI API key from Streamlit secrets
 openai.api_key = st.secrets["OPENAI_API_KEY"]
 
-# Initialize OpenAI client
-client = openai.OpenAI(api_key=openai.api_key)
+client = openai.OpenAI()
 
 @st.cache_data
 def get_response(user_prompt, temperature):
@@ -19,23 +18,38 @@ def get_response(user_prompt, temperature):
         input=[
             {"role": "user", "content": user_prompt}  # Prompt
         ],
-        temperature=temperature,  # A bit of creativity
-        max_output_tokens=100  # Limit response length
+        temperature=temperature,  # Creativity control
+        max_output_tokens=100     # Limit response length
     )
     return response
 
+# Add a text input box for the user prompt
+user_prompt = st.text_input("Enter your prompt:", "Explain generative AI in one sentence.")
+
+# Add a slider for temperature
+temperature = st.slider(
+    "Model temperature:",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.7,
+    step=0.01,
+    help="Controls randomness: 0 = deterministic, 1 = very creative"
+)
+
+with st.spinner("AI is working..."):
+    response = get_response(user_prompt, temperature)
+    # print the response from OpenAI
+    st.write(response.output[0].content[0].text)
 
 def get_dataset_path():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(current_dir, "data", "customer_reviews.csv")
     return csv_path
 
-
 def clean_text(text):
     text = text.lower().strip()
     text = re.sub(r'[^\w\s]', '', text)
     return text
-
 
 # Layout two buttons side by side
 col1, col2 = st.columns(2)
@@ -72,16 +86,4 @@ if "df" in st.session_state:
     
     st.subheader(f"Sentiment Score Distribution for {product}")
     # Create Altair histogram using add_params instead of add_selection
-    interval = alt.selection_interval()
-    chart = alt.Chart(filtered_df).mark_bar().add_params(
-        interval
-    ).encode(
-        alt.X("SENTIMENT_SCORE:Q", bin=alt.Bin(maxbins=10), title="Sentiment Score"),
-        alt.Y("count():Q", title="Frequency"),
-        tooltip=["count():Q"]
-    ).properties(
-        width=600,
-        height=400,
-        title="Distribution of Sentiment Scores"
-    )
-    st.altair_chart(chart, use_container_width=True)
+    interval = alt.selection_interva_
