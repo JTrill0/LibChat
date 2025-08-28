@@ -100,7 +100,7 @@ def keyword_search(query, df=None):
     return df[mask].head(10)
 
 # ---------------- Fuzzy Search (Chat) ----------------
-def fuzzy_search(query, df=None, threshold=85):
+def fuzzy_search(query, df=None, threshold=75):
     if df is None:
         df = books_df
     if df.empty or not query:
@@ -164,7 +164,7 @@ with tab1:
 
         # Process query (book search vs. AI chat)
         if is_book_query(user_input):
-            results = fuzzy_search(user_input, threshold=85)
+            results = fuzzy_search(user_input, threshold=75)
             if not results.empty:
                 book_list = "\n".join(
                     [f"📖 **{row['TITLE']}** by {row['AUTHOR']} "
@@ -250,3 +250,4 @@ with tab2:
             tooltip=["GENRE", "count()"]
         ).properties(title="Books Distribution by Genre")
         st.altair_chart(genre_chart, use_container_width=True)
+
