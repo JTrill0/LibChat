@@ -232,19 +232,28 @@ with tab3:
 
     # Chat Sentiment Trend
     st.subheader("Chat Sentiment Trend")
-    if "messages" in st.session_state:
-        user_queries = [m["content"] for m in st.session_state["messages"] if m["role"]=="user"]
-        if user_queries:
+    if "messages" in st.session_state and st.session_state.messages:
+        # Use OpenAI sentiment if available, else fallback
+        if "sentiment_score" in st.session_state:
+            sentiment_scores = [st.session_state.sentiment_score] * len(
+                [m for m in st.session_state.messages if m["role"]=="user"]
+            )
+        else:
+            # Fallback to TextBlob
+            user_queries = [m["content"] for m in st.session_state.messages if m["role"]=="user"]
             sentiment_scores = [TextBlob(q).sentiment.polarity for q in user_queries]
-            st.line_chart(sentiment_scores)
+
+        st.line_chart(sentiment_scores)
 
     # Missed Searches
     st.subheader("Missed Search Queries")
     if "messages" in st.session_state:
+        user_queries = [m["content"] for m in st.session_state.messages if m["role"]=="user"]
         missed = sum(1 for q in user_queries if keyword_search(q).empty)
         total = len(user_queries)
         if total > 0:
             st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
+
 
 
 
