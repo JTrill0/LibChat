@@ -10,7 +10,6 @@ textblob
 rapidfuzz
 openpyxl
 networkx
-plotly.graph_objects
-Counter
-itertools
+
+
 
