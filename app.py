@@ -139,6 +139,7 @@ st.write("Your AI-Powered Librarian and Library Catalog! 🔎")
 
 tab1, tab2, tab3 = st.tabs(["💬 Chatbot", "📖 Library Catalog", "📊 Data Analytics"])
 
+# ---------------- Tab 1: Chatbot (OpenAI Dependent + AI Sentiment) ----------------
 with tab1:
     st.header("💬 LibChat - Your Expert Librarian")
     st.caption("On rush? Can't find a book? Ask LibChat!")
@@ -146,38 +147,49 @@ with tab1:
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Render all previous messages
+    # Render chat history
     for msg in st.session_state.messages:
-        if msg["role"] == "bot":
-            with st.chat_message("assistant", avatar="📚"):
-                st.markdown(msg["content"])
-        else:
-            with st.chat_message("user", avatar="🙂"):
-                st.markdown(msg["content"])
+        role = "assistant" if msg["role"] == "bot" else "user"
+        avatar = "📚" if role == "assistant" else "🙂"
+        with st.chat_message(role, avatar=avatar):
+            st.markdown(msg["content"])
 
     # Chat input
     if user_input := st.chat_input("Type your message..."):
         st.session_state.messages.append({"role": "user", "content": user_input})
 
-        # Fully OpenAI dependent response
+        # OpenAI response
         bot_reply = get_response(user_input)
         st.session_state.messages.append({"role": "bot", "content": bot_reply})
 
-        # Rerun to show new message above input
+        # Rerun to show new message immediately
         st.rerun()
 
-    # Sentiment analysis
+    # ---------------- Sentiment Analysis via OpenAI ----------------
     if st.session_state.messages:
         user_texts = " ".join([m["content"] for m in st.session_state.messages if m["role"] == "user"])
         if user_texts.strip():
-            analysis = TextBlob(user_texts)
-            polarity = analysis.sentiment.polarity
-            sentiment = "😊 Positive" if polarity > 0.1 else "😞 Negative" if polarity < -0.1 else "😐 Neutral"
-            st.markdown("---")
-            st.subheader("📊 Sentiment Analysis (Conversation History)")
-            st.write(f"**Overall Sentiment:** {sentiment}")
-            st.write(f"**Polarity Score:** {polarity:.2f}")
- 
+            try:
+                sentiment_response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are a sentiment analysis assistant."},
+                        {"role": "user", "content": f"Analyze the sentiment of the following messages. "
+                                                    f"Categorize each as Positive, Neutral, or Negative, "
+                                                    f"and give an overall polarity score (-1 to 1):\n{user_texts}"}
+                    ],
+                    temperature=0
+                )
+
+                sentiment_text = sentiment_response.choices[0].message.content.strip()
+                st.markdown("---")
+                st.subheader("📊 AI-Powered Sentiment Analysis")
+                st.write(sentiment_text)
+
+            except Exception as e:
+                st.error(f"Failed to analyze sentiment: {e}")
+
+
 # ---------------- Tab 2: Library Catalog ----------------
 with tab2:
     st.header("📖 Explore the Library Collection")
@@ -253,6 +265,7 @@ with tab3:
         total = len(user_queries)
         if total > 0:
             st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
+
 
 
 
