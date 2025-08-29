@@ -139,16 +139,14 @@ st.write("Your AI-Powered Librarian and Library Catalog! 🔎")
 
 tab1, tab2, tab3 = st.tabs(["💬 Chatbot", "📖 Library Catalog", "📊 Data Analytics"])
 
-# ---------------- Tab 1: Chatbot ----------------
 with tab1:
     st.header("💬 LibChat - Your Expert Librarian")
     st.caption("On rush? Can't find a book? Ask LibChat!")
 
-    # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
-    # Render all chat messages (always above the input)
+    # Render all previous messages
     for msg in st.session_state.messages:
         if msg["role"] == "bot":
             with st.chat_message("assistant", avatar="📚"):
@@ -157,47 +155,24 @@ with tab1:
             with st.chat_message("user", avatar="🙂"):
                 st.markdown(msg["content"])
 
-    # Chat input (always pinned to bottom of page)
+    # Chat input
     if user_input := st.chat_input("Type your message..."):
-        # Save user message
         st.session_state.messages.append({"role": "user", "content": user_input})
 
-        # Process query (book search vs. AI chat)
-        if is_book_query(user_input):
-            results = fuzzy_search(user_input, threshold=75)
-            if not results.empty:
-                book_list = "\n".join(
-                    [f"📖 **{row['TITLE']}** by {row['AUTHOR']} "
-                     f"({row['DATE PUBLISH']}) - *{row['GENRE']}*, Section {row['SECTION']}\n"
-                     f"📝 {row['OVERVIEW'] if row['OVERVIEW'] else 'No overview available.'}\n"
-                     for _, row in results.iterrows()]
-                )
-                bot_reply = f"I found the following books related to your query:\n\n{book_list}"
-            else:
-                bot_reply = "I couldn’t find any matching books. Can you be more specific?"
-        else:
-            bot_reply = get_response(user_input)
-
-        # Save bot reply
+        # Fully OpenAI dependent response
+        bot_reply = get_response(user_input)
         st.session_state.messages.append({"role": "bot", "content": bot_reply})
 
-        # Force a rerun so the new messages appear above the input immediately
+        # Rerun to show new message above input
         st.rerun()
 
-    # ---------------- Sentiment Analysis ----------------
+    # Sentiment analysis
     if st.session_state.messages:
         user_texts = " ".join([m["content"] for m in st.session_state.messages if m["role"] == "user"])
         if user_texts.strip():
             analysis = TextBlob(user_texts)
             polarity = analysis.sentiment.polarity
-
-            if polarity > 0.1:
-                sentiment = "😊 Positive"
-            elif polarity < -0.1:
-                sentiment = "😞 Negative"
-            else:
-                sentiment = "😐 Neutral"
-
+            sentiment = "😊 Positive" if polarity > 0.1 else "😞 Negative" if polarity < -0.1 else "😐 Neutral"
             st.markdown("---")
             st.subheader("📊 Sentiment Analysis (Conversation History)")
             st.write(f"**Overall Sentiment:** {sentiment}")
@@ -270,5 +245,6 @@ with tab3:
         total = len(user_queries)
         if total > 0:
             st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
+
 
 
