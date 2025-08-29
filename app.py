@@ -226,46 +226,76 @@ with tab3:
     st.header("📊 Library Data Analytics")
     st.write("Insights from library catalog and chatbot interactions")
 
-    # Top Genres & Authors
-    st.subheader("Top Genres")
-    st.bar_chart(books_df["GENRE"].value_counts().head(10))
-    st.subheader("Top Authors")
-    st.bar_chart(books_df["AUTHOR"].value_counts().head(10))
-
-    # Publication Trends
-    st.subheader("Books Published Over the Years by Genre")
-    trend_chart = alt.Chart(books_df).mark_bar().encode(
-        x="DATE PUBLISH:O",
-        y="count()",
-        color="GENRE:N",
-        tooltip=["GENRE", "DATE PUBLISH", "count()"]
-    ).properties(title="Books Published per Year by Genre")
-    st.altair_chart(trend_chart, use_container_width=True)
-
-    # Chat Sentiment Trend
+    # ---------------- Chat Sentiment Trend ----------------
     st.subheader("Chat Sentiment Trend")
     if "messages" in st.session_state and st.session_state.messages:
-        # Use OpenAI sentiment if available, else fallback
         if "sentiment_score" in st.session_state:
             sentiment_scores = [st.session_state.sentiment_score] * len(
                 [m for m in st.session_state.messages if m["role"]=="user"]
             )
         else:
-            # Fallback to TextBlob
             user_queries = [m["content"] for m in st.session_state.messages if m["role"]=="user"]
             sentiment_scores = [TextBlob(q).sentiment.polarity for q in user_queries]
-
         st.line_chart(sentiment_scores)
 
-    # Missed Searches
-    st.subheader("Missed Search Queries")
+    # ---------------- Top User Topics (AI + Co-occurrence) ----------------
+    st.subheader("Top User Topics")
+    if "messages" in st.session_state and st.session_state.messages:
+        user_texts = "\n".join([m["content"] for m in st.session_state.messages if m["role"]=="user"])
+        if user_texts.strip():
+            try:
+                topic_response = openai.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": "You are an AI analyst for library chatbot interactions."},
+                        {"role": "user", "content": f"Analyze these user messages and provide the top 5 most frequent topics. "
+                                                    f"Also, list any topics that often appear together (co-occurrence).\n{user_texts}"}
+                    ],
+                    temperature=0
+                )
+                topic_summary = topic_response.choices[0].message.content.strip()
+                st.markdown(topic_summary)
+            except Exception as e:
+                st.error(f"Failed to extract topics: {e}")
+
+    # ---------------- Missed Search Analysis (AI) ----------------
+    st.subheader("Missed Search Analysis")
     if "messages" in st.session_state:
         user_queries = [m["content"] for m in st.session_state.messages if m["role"]=="user"]
-        missed = sum(1 for q in user_queries if keyword_search(q).empty)
-        total = len(user_queries)
-        if total > 0:
-            st.write(f"Missed search queries: {missed} / {total} ({missed/total*100:.1f}%)")
+        missed_queries = [q for q in user_queries if keyword_search(q).empty]
+        total_queries = len(user_queries)
 
+        if total_queries > 0:
+            st.write(f"Missed search queries: {len(missed_queries)} / {total_queries} ({len(missed_queries)/total_queries*100:.1f}%)")
+            
+            if missed_queries:
+                try:
+                    missed_response = openai.chat.completions.create(
+                        model="gpt-4o",
+                        messages=[
+                            {"role": "system", "content": "You are an AI analyst for library catalog searches."},
+                            {"role": "user", "content": f"These search queries returned no results: {missed_queries}\n"
+                                                        "Analyze why users might not find results and suggest improvements."}
+                        ],
+                        temperature=0
+                    )
+                    missed_summary = missed_response.choices[0].message.content.strip()
+                    st.markdown(missed_summary)
+                except Exception as e:
+                    st.error(f"Failed to analyze missed searches: {e}")
+
+    # ---------------- Most Searched Books ----------------
+    st.subheader("Most Searched Books")
+    if "search_history" not in st.session_state:
+        st.session_state.search_history = []
+
+    # Append latest search from Tab 2 if exists
+    if search_query:
+        st.session_state.search_history.append(search_query)
+
+    if st.session_state.search_history:
+        most_searched = pd.Series(st.session_state.search_history).value_counts().head(10)
+        st.bar_chart(most_searched)
 
 
 
